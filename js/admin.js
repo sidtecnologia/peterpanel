@@ -40,14 +40,12 @@
         const convertToCSV = (data) => {
             if (data.length === 0) return '';
             
-            const exportFields = ['id', 'customer_name', 'total_amount', 'created_at', 'order_status', 'payment_status'];
+            const exportFields = ['customer_name', 'created_at', 'payment_method', 'total_amount'];
             const headersMap = {
-                id: 'ID Orden',
                 customer_name: 'Cliente',
-                total_amount: 'Total',
                 created_at: 'Fecha',
-                order_status: 'Estado Orden',
-                payment_status: 'Estado Pago'
+                payment_method: 'Método de pago',
+                total_amount: 'Total'
             };
             
             const headers = exportFields.map(field => headersMap[field]).join(',');
