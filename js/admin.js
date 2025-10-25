@@ -22,106 +22,165 @@
 
         // --- INTEGRACIÓN: LÓGICA DE WHATSAPP (AHORA EN ESTE ARCHIVO) ---
         (function (window) {
-          let DOMICILIARIO_PHONE = '573227671829'
+  let DOMICILIARIO_PHONE = '573227671829'
 
-          const MAX_MINUTES = 120; // máximo 120 minutos
+  const MAX_MINUTES = 120; // máximo 120 minutos (mantengo la lógica original)
+  const HIDE_AFTER_MS = 5 * 60 * 1000; // 5 minutos en ms
 
-          function isEligibleForWhatsapp(order) {
-            if (!order) return false;
+  function isEligibleForWhatsapp(order) {
+    if (!order) return false;
 
-            // Normalizar estado para evitar espacios / mayúsculas
-            const status = String(order.order_status || '').trim().toLowerCase();
-            if (status !== 'despachado') return false;
+    // Normalizar estado para evitar espacios / mayúsculas
+    const status = String(order.order_status || '').trim().toLowerCase();
+    if (status !== 'despachado') return false;
 
-            // created_at puede venir como ISO string, timestamp numérico, o campo distinto
-            let createdVal = order.created_at ?? order.createdAt ?? order.created_ad ?? null;
-            if (createdVal == null) return false;
+    // created_at puede venir como ISO string, timestamp numérico, o campo distinto
+    let createdVal = order.created_at ?? order.createdAt ?? order.created_ad ?? null;
+    if (createdVal == null) return false;
 
-            let createdTime = NaN;
-            if (typeof createdVal === 'number') {
-              // timestamp (segundos o ms?) asumimos ms si > 10^12, si no, lo consideramos segundos.
-              createdTime = createdVal > 1e12 ? createdVal : (createdVal * 1000);
-            } else if (typeof createdVal === 'string') {
-              // intentar parsear ISO u otros formatos
-              createdTime = Date.parse(createdVal);
-              if (isNaN(createdTime)) {
-                // intentar parsear si es un número en string
-                const n = Number(createdVal);
-                if (!isNaN(n)) createdTime = n > 1e12 ? n : n * 1000;
-              }
-            } else if (createdVal instanceof Date) {
-              createdTime = createdVal.getTime();
-            }
+    let createdTime = NaN;
+    if (typeof createdVal === 'number') {
+      createdTime = createdVal > 1e12 ? createdVal : (createdVal * 1000);
+    } else if (typeof createdVal === 'string') {
+      createdTime = Date.parse(createdVal);
+      if (isNaN(createdTime)) {
+        const n = Number(createdVal);
+        if (!isNaN(n)) createdTime = n > 1e12 ? n : n * 1000;
+      }
+    } else if (createdVal instanceof Date) {
+      createdTime = createdVal.getTime();
+    }
 
-            if (isNaN(createdTime)) return false;
+    if (isNaN(createdTime)) return false;
 
-            const diffMs = Date.now() - createdTime;
-            return diffMs <= MAX_MINUTES * 60 * 1000;
+    const diffMs = Date.now() - createdTime;
+    return diffMs <= MAX_MINUTES * 60 * 1000;
+  }
+
+  function sanitizePhone(phone) {
+    if (!phone) return '';
+    return String(phone).replace(/[^+\d]/g, '');
+  }
+
+  function formatAmount(amount) {
+    if (amount == null || amount === '') return '';
+    try {
+      if (typeof amount === 'number') return `$${amount.toLocaleString('es-CO')}`;
+      return `$${amount}`;
+    } catch {
+      return `$${amount}`;
+    }
+  }
+
+  function whatsappTextForOrder(order) {
+    const name = order.customer_name || '';
+    const address = order.customer_address || '';
+    const amount = formatAmount(order.total_amount);
+    const lines = [
+      ` la dirección ${address}`,
+      `a nombre de: ${name}`,
+      `Total del pedido: ${amount}`
+    ];
+    return encodeURIComponent(lines.join('\n'));
+  }
+
+  function makeWhatsappHref(order, phoneOverride) {
+    const text = whatsappTextForOrder(order);
+    let phone = phoneOverride || DOMICILIARIO_PHONE || '';
+    phone = sanitizePhone(phone);
+    if (phone) {
+      if (phone.startsWith('+')) phone = phone.slice(1);
+      return `https://wa.me/${phone}?text=Por%20favor%20buscar%20un%20pedido%20en%20Comidas%20R%C3%A1pidas%20Donde%20Peter%20para%20entregar%20en%3A${text}`;
+    } else {
+      return `https://wa.me/?text=${text}`;
+    }
+  }
+
+  // Helpers para persistir el estado "presionado" en localStorage
+  function _pressedKey(orderId) {
+    return `wa_pressed_${orderId}`;
+  }
+  function markPressed(orderId) {
+    try {
+      localStorage.setItem(_pressedKey(orderId), String(Date.now()));
+    } catch (e) {
+      // ignore
+    }
+  }
+  function wasPressedRecently(orderId, withinMs = HIDE_AFTER_MS) {
+    try {
+      const s = localStorage.getItem(_pressedKey(orderId));
+      if (!s) return false;
+      const t = parseInt(s, 10);
+      if (isNaN(t)) return false;
+      return (Date.now() - t) < withinMs;
+    } catch (e) {
+      return false;
+    }
+  }
+  function clearPressed(orderId) {
+    try {
+      localStorage.removeItem(_pressedKey(orderId));
+    } catch (e) {}
+  }
+
+  function createButtonElement(order, phoneOverride) {
+    if (!isEligibleForWhatsapp(order)) return null;
+    const orderId = String(order.id ?? order.order_id ?? '');
+
+    // Si ya se presionó este pedido dentro del periodo de ocultado, no crear botón
+    if (orderId && wasPressedRecently(orderId)) {
+      // opcional: podrías devolver un elemento disabled, aquí devolvemos null para que no se muestre
+      return null;
+    }
+
+    const a = document.createElement('a');
+    a.className = 'ml-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-150 inline-block';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.href = makeWhatsappHref(order, phoneOverride);
+    a.title = 'Domicilio';
+    a.textContent = 'Domicilio';
+    a.setAttribute('data-wa-order-id', orderId);
+
+    // Al hacer click: marcamos que fue presionado y programamos ocultarlo luego de 5 minutos
+    a.addEventListener('click', (ev) => {
+      if (!orderId) return;
+      try {
+        // marcar en localStorage
+        markPressed(orderId);
+      } catch (e) {
+        // ignore
+      }
+
+      // Programamos la eliminación/ocultamiento del botón en HIDE_AFTER_MS
+      setTimeout(() => {
+        try {
+          const el = document.querySelector(`a[data-wa-order-id="${orderId}"]`);
+          if (el && el.parentNode) {
+            // si quieres animar, cámbialo aquí; por ahora lo removemos
+            el.parentNode.removeChild(el);
           }
+        } catch (err) {
+          console.error('Error al ocultar botón WhatsApp tras 5 minutos', err);
+        }
+      }, HIDE_AFTER_MS);
+    }, { once: false });
 
-          function sanitizePhone(phone) {
-            if (!phone) return '';
-            return String(phone).replace(/[^+\d]/g, '');
-          }
+    return a;
+  }
 
-          function formatAmount(amount) {
-            if (amount == null || amount === '') return '';
-            // Ajusta formato si quieres miles/centavos; por defecto lo mostramos como $valor
-            try {
-              if (typeof amount === 'number') return `$${amount.toLocaleString('es-CO')}`;
-              return `$${amount}`;
-            } catch {
-              return `$${amount}`;
-            }
-          }
-
-          function whatsappTextForOrder(order) {
-            const name = order.customer_name || '';
-            const address = order.customer_address || '';
-            const amount = formatAmount(order.total_amount);
-            const lines = [
-              ` la dirección ${address}`,
-              `a nombre de: ${name}`,
-              `Total del pedido: ${amount}`
-            ];
-            return encodeURIComponent(lines.join('\n'));
-          }
-
-          function makeWhatsappHref(order, phoneOverride) {
-            const text = whatsappTextForOrder(order);
-            let phone = phoneOverride || DOMICILIARIO_PHONE || '';
-            phone = sanitizePhone(phone);
-            if (phone) {
-              // wa.me necesita el número sin '+'
-              if (phone.startsWith('+')) phone = phone.slice(1);
-              return `https://wa.me/${phone}?text=Por%20favor%20buscar%20un%20pedido%20en%20Comidas%20R%C3%A1pidas%20Donde%20Peter%20para%20entregar%20en%3A${text}`;
-            } else {
-              return `https://wa.me/?text=${text}`;
-            }
-          }
-
-          function createButtonElement(order, phoneOverride) {
-            if (!isEligibleForWhatsapp(order)) return null;
-            const a = document.createElement('a');
-            a.className = 'ml-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-150 inline-block';
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            a.href = makeWhatsappHref(order, phoneOverride);
-            a.title = 'Domicilio';
-            a.textContent = 'Domicilio';
-            // atributo para evitar duplicados al re-renderizar
-            a.setAttribute('data-wa-order-id', order.id);
-            return a;
-          }
-
-          // API pública
-          window.whatsappContact = {
-            isEligibleForWhatsapp,
-            createButtonElement,
-            makeWhatsappHref,
-            setDomiciliarioPhone: (phone) => { DOMICILIARIO_PHONE = sanitizePhone(phone); }
-          };
-        })(window);
+  // API pública
+  window.whatsappContact = {
+    isEligibleForWhatsapp,
+    createButtonElement,
+    makeWhatsappHref,
+    setDomiciliarioPhone: (phone) => { DOMICILIARIO_PHONE = sanitizePhone(phone); },
+    // expongo helpers por si se necesitan (opcional)
+    _wasPressedRecently: wasPressedRecently,
+    _clearPressed: clearPressed
+  };
+})(window);
 
         // --- FUNCIONES DE UTILIDAD ---
 
