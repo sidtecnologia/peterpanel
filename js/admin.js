@@ -803,7 +803,7 @@
                     <tr class="hover:bg-gray-50" data-id="${o.id}">
                         <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${o.customer_name}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">${o.customer_address}</td>
-                        <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">$${o.observation}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">${o.observation}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(o.created_at).toLocaleDateString()}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm text-orange-600">${o.order_status}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">
