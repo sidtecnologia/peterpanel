@@ -1561,3 +1561,12 @@
                 setView('login-view', true);
             }
         });
+
+    try {
+    if (typeof loadOrdersDespacho === 'function') window.loadOrdersDespacho = loadOrdersDespacho;
+    if (typeof generateOrderTableDespacho === 'function') window.generateOrderTableDespacho = generateOrderTableDespacho;
+    if (typeof dispatchOrder === 'function') window.dispatchOrder = dispatchOrder;
+    // Si tienes más funciones que quieras exponer, añádelas aquí.
+} catch (e) {
+    console.warn('No se pudieron exponer funciones al window:', e);
+}
