@@ -790,7 +790,7 @@
                         <tr>
                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
-                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Observación</th>
                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado Orden</th>
                             <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -803,7 +803,7 @@
                     <tr class="hover:bg-gray-50" data-id="${o.id}">
                         <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${o.customer_name}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">${o.customer_address}</td>
-                        <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">$${o.total_amount}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">$${o.observation}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(o.created_at).toLocaleDateString()}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm text-orange-600">${o.order_status}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">
