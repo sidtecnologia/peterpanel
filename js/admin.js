@@ -1,7 +1,7 @@
 // --- CONFIGURACIÓN DE SUPABASE ---
         const SB_URL = "https://ndqzyplsiqigsynweihk.supabase.co"; // ¡Reemplaza con tu URL!
-        const SB_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcXp5cGxzaXFpZ3N5bndlaWhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODQyOTQ4MiwiZXhwIjoyMDc0MDA1NDgyfQ.LYocdE6jGG5B-0n_2Ke0nUpkrAKC7iBBRV7RmgjATD8"; 
-         
+        const SB_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcXp5cGxzaXFpZ3N5bndlaWhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODQyOTQ4MiwiZXhwIjoyMDc0MDA1NDgyfQ.LYocdE6jGG5B-0n_2Ke0nUpkrAKC7iBBRV7RmgjATD8";
+
         const BASE_API_URL = `${SB_URL}/rest/v1`;
         const AUTH_API_URL = `${SB_URL}/auth/v1`;
         const STORAGE_BUCKET = "donde_peter";
@@ -19,6 +19,109 @@
         let currentProduct = null; // Almacena el producto que se está editando
 
         const DEFAULT_IMG_URL = "https://placehold.co/40x40/cccccc/000000?text=IMG";
+
+        // --- INTEGRACIÓN: LÓGICA DE WHATSAPP (AHORA EN ESTE ARCHIVO) ---
+        (function (window) {
+          let DOMICILIARIO_PHONE = '573227671829'
+
+          const MAX_MINUTES = 120; // máximo 120 minutos
+
+          function isEligibleForWhatsapp(order) {
+            if (!order) return false;
+
+            // Normalizar estado para evitar espacios / mayúsculas
+            const status = String(order.order_status || '').trim().toLowerCase();
+            if (status !== 'despachado') return false;
+
+            // created_at puede venir como ISO string, timestamp numérico, o campo distinto
+            let createdVal = order.created_at ?? order.createdAt ?? order.created_ad ?? null;
+            if (createdVal == null) return false;
+
+            let createdTime = NaN;
+            if (typeof createdVal === 'number') {
+              // timestamp (segundos o ms?) asumimos ms si > 10^12, si no, lo consideramos segundos.
+              createdTime = createdVal > 1e12 ? createdVal : (createdVal * 1000);
+            } else if (typeof createdVal === 'string') {
+              // intentar parsear ISO u otros formatos
+              createdTime = Date.parse(createdVal);
+              if (isNaN(createdTime)) {
+                // intentar parsear si es un número en string
+                const n = Number(createdVal);
+                if (!isNaN(n)) createdTime = n > 1e12 ? n : n * 1000;
+              }
+            } else if (createdVal instanceof Date) {
+              createdTime = createdVal.getTime();
+            }
+
+            if (isNaN(createdTime)) return false;
+
+            const diffMs = Date.now() - createdTime;
+            return diffMs <= MAX_MINUTES * 60 * 1000;
+          }
+
+          function sanitizePhone(phone) {
+            if (!phone) return '';
+            return String(phone).replace(/[^+\d]/g, '');
+          }
+
+          function formatAmount(amount) {
+            if (amount == null || amount === '') return '';
+            // Ajusta formato si quieres miles/centavos; por defecto lo mostramos como $valor
+            try {
+              if (typeof amount === 'number') return `$${amount.toLocaleString('es-CO')}`;
+              return `$${amount}`;
+            } catch {
+              return `$${amount}`;
+            }
+          }
+
+          function whatsappTextForOrder(order) {
+            const name = order.customer_name || '';
+            const address = order.customer_address || '';
+            const amount = formatAmount(order.total_amount);
+            const lines = [
+              ` la dirección ${address}`,
+              `a nombre de: ${name}`,
+              `Total del pedido: ${amount}`
+            ];
+            return encodeURIComponent(lines.join('\n'));
+          }
+
+          function makeWhatsappHref(order, phoneOverride) {
+            const text = whatsappTextForOrder(order);
+            let phone = phoneOverride || DOMICILIARIO_PHONE || '';
+            phone = sanitizePhone(phone);
+            if (phone) {
+              // wa.me necesita el número sin '+'
+              if (phone.startsWith('+')) phone = phone.slice(1);
+              return `https://wa.me/${phone}?text=Por%20favor%20buscar%20un%20pedido%20en%20Comidas%20R%C3%A1pidas%20Donde%20Peter%20para%20entregar%20en%3A${text}`;
+            } else {
+              return `https://wa.me/?text=${text}`;
+            }
+          }
+
+          function createButtonElement(order, phoneOverride) {
+            if (!isEligibleForWhatsapp(order)) return null;
+            const a = document.createElement('a');
+            a.className = 'ml-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-150 inline-block';
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.href = makeWhatsappHref(order, phoneOverride);
+            a.title = 'Domicilio';
+            a.textContent = 'Domicilio';
+            // atributo para evitar duplicados al re-renderizar
+            a.setAttribute('data-wa-order-id', order.id);
+            return a;
+          }
+
+          // API pública
+          window.whatsappContact = {
+            isEligibleForWhatsapp,
+            createButtonElement,
+            makeWhatsappHref,
+            setDomiciliarioPhone: (phone) => { DOMICILIARIO_PHONE = sanitizePhone(phone); }
+          };
+        })(window);
 
         // --- FUNCIONES DE UTILIDAD ---
 
@@ -336,7 +439,7 @@
                 console.log(`Producto ${id} eliminado con éxito.`); 
             } catch (e) {
                 console.error(`Error al eliminar producto ${id}: ${e.message}`);
-                logError(`Error al eliminar producto.`);
+                logError(`Error al eliminar el producto.`);
             }
         };
 
@@ -372,9 +475,9 @@
                     </div>
 
                     <div class="flex flex-wrap gap-4 pt-4 border-t">
-                        <label class="flex items-center"><input type="checkbox" id="modal-featured" ${product?.featured ? 'checked' : ''} class="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600"><span class="text-gray-700">Destacado</span></label>
-                        <label class="flex items-center"><input type="checkbox" id="modal-isOffer" ${product?.isOffer ? 'checked' : ''} class="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600"><span class="text-gray-700">En Oferta</span></label>
-                        <label class="flex items-center"><input type="checkbox" id="modal-bestSeller" ${product?.bestSeller ? 'checked' : ''} class="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600"><span class="text-gray-700">Más Vendido</span></label>
+                        <label class="flex items-center"><input type="checkbox" id="modal-featured" ${product?.featured ? 'checked' : ''} class="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600"> Destacado</label>
+                        <label class="flex items-center"><input type="checkbox" id="modal-isOffer" ${product?.isOffer ? 'checked' : ''} class="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600"> Oferta</label>
+                        <label class="flex items-center"><input type="checkbox" id="modal-bestSeller" ${product?.bestSeller ? 'checked' : ''} class="mr-2 h-4 w-4 rounded border-gray-300 text-indigo-600"> Más Vendido</label>
                     </div>
                 </div>
             `;
@@ -966,8 +1069,9 @@
             html += `<td class="px-3 py-4 whitespace-nowrap text-sm text-gray-700">${val || ''}</td>`;
         });
 
+        // NOTA: usamos una celda de acciones con clase 'actions-cell' para inyectar el botón WhatsApp
         html += `
-            <td class="px-3 py-4 whitespace-nowrap text-sm font-medium">
+            <td class="px-3 py-4 whitespace-nowrap text-sm font-medium actions-cell">
                 <button data-id="${o.id}" data-action="view" class="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-blue-700 transition duration-150">Detalle</button>
             </td>
         </tr>`;
@@ -977,6 +1081,33 @@
     return html;
 };
 
+
+        // --- Helper: añadir botones WhatsApp en la tabla de pendientes ---
+        const appendWhatsappButtonsToPendingOrders = (orders, phoneFieldName = null) => {
+            if (!window.whatsappContact) return;
+            if (!Array.isArray(orders) || orders.length === 0) return;
+
+            orders.forEach(order => {
+                try {
+                    if (!window.whatsappContact.isEligibleForWhatsapp(order)) return;
+
+                    // localizar la fila por data-id
+                    const row = document.querySelector(`#orders-list-pendientes tr[data-id="${order.id}"]`);
+                    if (!row) return;
+                    const actionCell = row.querySelector('.actions-cell');
+                    if (!actionCell) return;
+
+                    // Evitar duplicados
+                    if (actionCell.querySelector(`a[data-wa-order-id="${order.id}"]`)) return;
+
+                    const phone = phoneFieldName ? (order[phoneFieldName] || '') : undefined;
+                    const waBtn = window.whatsappContact.createButtonElement(order, phone);
+                    if (waBtn) actionCell.appendChild(waBtn);
+                } catch (err) {
+                    console.error('Error al crear botón WhatsApp para orden', order?.id, err);
+                }
+            });
+        };
 
         const attachPendingListeners = (orders) => {
             document.querySelectorAll('#orders-list-pendientes button[data-action]').forEach(button => {
@@ -1001,6 +1132,12 @@
                     }
                 };
             });
+
+            // Asegurar DOM listo y luego inyectar botones (evita condiciones de carrera)
+            setTimeout(() => {
+                // Si se desea pasar un campo telefónico por orden, poner 'delivery_phone' por ejemplo
+                appendWhatsappButtonsToPendingOrders(orders /*, 'delivery_phone' */);
+            }, 0);
         };
 
         // --- NUEVAS FUNCIONES: MANEJO DE out_money (egresos) ---
