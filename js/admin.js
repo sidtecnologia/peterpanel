@@ -767,7 +767,7 @@
         };
 
 
-        // --- FUNCIONES DE DESPACHO (orders_confirmed) ---
+        // --- FUNCIONES DE COCINA (orders_confirmed) ---
 
         const loadOrdersDespacho = async () => {
             const url = `${BASE_API_URL}/orders_confirmed?select=*&order=created_at.asc&order_status=neq.Despachado`;
