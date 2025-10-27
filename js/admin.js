@@ -1,5 +1,5 @@
 // --- CONFIGURACIÓN DE SUPABASE ---
-        const SB_URL = "https://ndqzyplsiqigsynweihk.supabase.co"; // ¡Reemplaza con tu URL!
+        const SB_URL = "https://ndqzyplsiqigsynweihk.supabase.co";
         const SB_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcXp5cGxzaXFpZ3N5bndlaWhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODQyOTQ4MiwiZXhwIjoyMDc0MDA1NDgyfQ.LYocdE6jGG5B-0n_2Ke0nUpkrAKC7iBBRV7RmgjATD8";
 
         const BASE_API_URL = `${SB_URL}/rest/v1`;
@@ -16,25 +16,25 @@
         
         // Variables de estado para el modal de productos
         let fileToUpload = null; 
-        let currentProduct = null; // Almacena el producto que se está editando
+        let currentProduct = null;
 
         const DEFAULT_IMG_URL = "https://placehold.co/40x40/cccccc/000000?text=IMG";
 
-        // --- INTEGRACIÓN: LÓGICA DE WHATSAPP (AHORA EN ESTE ARCHIVO) ---
+        
         (function (window) {
   let DOMICILIARIO_PHONE = '573227671829'
 
-  const MAX_MINUTES = 120; // máximo 120 minutos (mantengo la lógica original)
-  const HIDE_AFTER_MS = 5 * 60 * 1000; // 5 minutos en ms
+  const MAX_MINUTES = 15; // máximo 120 minutos whatsapp botón visible
+  const HIDE_AFTER_MS = 5 * 60 * 1000; // 5 minutos luego de presionarlo
 
   function isEligibleForWhatsapp(order) {
     if (!order) return false;
 
-    // Normalizar estado para evitar espacios / mayúsculas
+   
     const status = String(order.order_status || '').trim().toLowerCase();
     if (status !== 'despachado') return false;
 
-    // created_at puede venir como ISO string, timestamp numérico, o campo distinto
+  
     let createdVal = order.created_at ?? order.createdAt ?? order.created_ad ?? null;
     if (createdVal == null) return false;
 
@@ -128,10 +128,10 @@
     if (!isEligibleForWhatsapp(order)) return null;
     const orderId = String(order.id ?? order.order_id ?? '');
 
-    // Si ya se presionó este pedido dentro del periodo de ocultado, no crear botón
+    
     if (orderId && wasPressedRecently(orderId)) {
-      // opcional: podrías devolver un elemento disabled, aquí devolvemos null para que no se muestre
-      return null;
+      // Devolver elemento disabled o null para que no se muestre
+      return disabled;
     }
 
     const a = document.createElement('a');
@@ -143,7 +143,7 @@
     a.textContent = 'Domicilio';
     a.setAttribute('data-wa-order-id', orderId);
 
-    // Al hacer click: marcamos que fue presionado y programamos ocultarlo luego de 5 minutos
+    // Al hacer click ocultarlo luego de 5 minutos
     a.addEventListener('click', (ev) => {
       if (!orderId) return;
       try {
@@ -153,7 +153,7 @@
         // ignore
       }
 
-      // Programamos la eliminación/ocultamiento del botón en HIDE_AFTER_MS
+      // Eliminación/ocultamiento del botón en HIDE_AFTER_MS
       setTimeout(() => {
         try {
           const el = document.querySelector(`a[data-wa-order-id="${orderId}"]`);
@@ -502,7 +502,7 @@
             }
         };
 
-        // --- INICIO DEL BLOQUE DE CÓDIGO DE PRODUCTOS (CORREGIDO) ---
+        // --- PRODUCTOS ---
 
         const showProductModal = (product) => {
             currentProduct = product; 
@@ -1097,10 +1097,11 @@
         return `<p class="text-gray-600">No hay órdenes en orders_confirmed.</p>`;
     }
 
-    const columns = ['id', 'customer_name', 'total_amount', 'created_at', 'order_status'];
+    const columns = ['id', 'customer_name', 'customer_address', 'total_amount', 'created_at', 'order_status'];
     const titles = {
         id: 'ID Orden',
         customer_name: 'Cliente',
+        customer_address: 'Ubicación',
         total_amount: 'Total',
         created_at: 'Fecha',
         order_status: 'Estado Orden'
@@ -1194,8 +1195,7 @@
 
             // Asegurar DOM listo y luego inyectar botones (evita condiciones de carrera)
             setTimeout(() => {
-                // Si se desea pasar un campo telefónico por orden, poner 'delivery_phone' por ejemplo
-                appendWhatsappButtonsToPendingOrders(orders /*, 'delivery_phone' */);
+                appendWhatsappButtonsToPendingOrders(orders);
             }, 0);
         };
 
@@ -1544,8 +1544,7 @@
         };
 
         const printShiftSummary = async () => {
-            // Imprime el resumen desde apertura hasta ahora si está abierto,
-            // o muestra mensaje si no hay turno abierto.
+            
             if (!isShiftOpen()) {
                 logError('No hay turno abierto para imprimir.');
                 return;
