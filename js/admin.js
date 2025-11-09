@@ -24,7 +24,7 @@
         (function (window) {
   let DOMICILIARIO_PHONE = '573227671829'
 
-  const MAX_MINUTES = 15; // máximo 120 minutos whatsapp botón visible
+  const MAX_MINUTES = 15; // máximo 15 minutos whatsapp botón visible
   const HIDE_AFTER_MS = 5 * 60 * 1000; // 5 minutos luego de presionarlo
 
   function isEligibleForWhatsapp(order) {
