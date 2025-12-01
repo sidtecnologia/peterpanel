@@ -39,12 +39,22 @@
             <div id="caja-view" class="user-view" style="display: none;">
                 <h2 class="text-2xl font-semibold mb-6 text-gray-800">CAJA</h2>
 
-                <div class="flex space-x-4 mb-6">
+                <div class="flex flex-wrap gap-4 mb-6">
+                    <button id="caja-btn-mesas" class="px-6 py-2 rounded-lg font-semibold shadow-md bg-green-500 text-white hover:bg-green-600">Mesas</button>
                     <button id="caja-btn-egresos" class="px-6 py-2 rounded-lg font-semibold shadow-md bg-gray-200 text-gray-800 hover:bg-gray-300">Turno</button>
                     <button id="caja-btn-pedidos" class="px-6 py-2 rounded-lg font-semibold shadow-md bg-gray-200 text-gray-800 hover:bg-gray-300">Pedidos Entrantes</button>
                     <button id="caja-btn-pendientes" class="px-6 py-2 rounded-lg font-semibold shadow-md bg-gray-200 text-gray-800 hover:bg-blue-300">Estado Pedidos</button>
-                    <button id="caja-btn-productos" class="px-6 py-2 rounded-lg font-semibold shadow-md bg-red-500 text-white hover:bg-red-600">Productos</button>
+                    <button id="caja-btn-productos" class="px-6 py-2 rounded-lg font-semibold shadow-md bg-gray-200 text-gray-800 hover:bg-red-600">Productos</button>
                 </div>
+
+                
+                <div id="caja-section-mesas" class="bg-white p-6 rounded-xl shadow-lg mb-8" style="display: none;">
+                    <h3 class="text-xl font-bold text-green-700 mb-4">Cuentas Abiertas</h3>
+                    <p class="text-sm text-gray-600 mb-4"></p>
+                    <div id="active-tables-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+                </div>
+                
 
                 <div id="caja-section-productos" class="bg-white p-6 rounded-xl shadow-lg mb-8">
                     <h3 class="text-xl font-bold text-red-700 mb-4">Productos</h3>
@@ -67,15 +77,13 @@
                         </div>
                 </div>
 
-                <!-- Nueva sección: Órdenes Pendientes (usa datos de orders_confirmed) -->
+        
                 <div id="caja-section-pendientes" class="bg-white p-6 rounded-xl shadow-lg" style="display: none;">
                     <h3 class="text-xl font-bold text-red-700 mb-4">Estado</h3>
                     <div id="orders-list-pendientes" class="overflow-x-auto">
-                        <!-- Tabla cargada dinámicamente -->
                         </div>
                 </div>
 
-                <!-- Nueva sección: Egresos / Cierre de Turno -->
                 <div id="caja-section-egresos" class="bg-white p-6 rounded-xl shadow-lg" style="display: none;">
                     <h3 class="text-xl font-bold text-red-700 mb-4">Turno</h3>
 
@@ -99,9 +107,13 @@
                         <div class="space-y-3">
                             <div id="shift-summary" class="p-4 bg-gray-50 rounded-md border hidden">
                                 <p class="font-medium">Resumen Turno (Abierto)</p>
-                                <p id="summary-total-sales" class="mt-2">Ventas: $0</p>
-                                <p id="summary-total-egresos" class="mt-1">Egresos: $0</p>
-                                <p id="summary-net-cash" class="mt-1 font-bold">Neto en Caja: $0</p>
+                                <div id="summary-lines" class="mt-2 space-y-1">
+                                    <p id="summary-total-sales" class="">Ventas: $0</p>
+                                    <p id="summary-open-tables" class="">Mesas Abiertas: $0</p>
+                                    <p id="summary-subtotal-before-egresos" class="">Subtotal en caja (sin mesas abiertas): $0</p>
+                                    <p id="summary-total-egresos" class="">Egresos: $0</p>
+                                    <p id="summary-net-cash" class="font-bold">Neto en Caja: $0</p>
+                                </div>
                                 <div class="mt-3">
                                     <button id="refresh-shift-summary" class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Actualizar Resumen</button>
                                 </div>
@@ -121,6 +133,18 @@
                 <h2 class="text-2xl font-semibold mb-6 text-gray-800">DESPACHO</h2>
 
                 <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-700">Pedidos Pendientes de Despacho</h3>
+                        <div class="flex items-center">
+                            <button id="despacho-refresh-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 shadow-md mr-2">
+                                Actualizar
+                            </button>
+                            <svg id="despacho-refresh-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    </div>
                     <div id="orders-list-despacho" class="overflow-x-auto">
                         </div>
                 </div>
