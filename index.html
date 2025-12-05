@@ -1,44 +1,13 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Control</title>
-    <link rel="stylesheet" href="css/ini.css">
-</head>
-<body>
-    <header class="header">
-        <h1>Panel Comida Rápida</h1>
-        <p>Seleccione su rol para ingresar al panel.</p>
-    </header>
-
-    <main class="main-content">
-        <div class="user-cards-container">
-            
-            <a href="users/caja/" class="user-card" data-role="Caja">
-                <div class="card-icon">💵</div>
-                <h2 class="card-title">Caja</h2>
-                <p class="card-description">Gestión de productos y pedidos.</p>
-            </a>
-
-            <a href="users/cocina/" class="user-card" data-role="Cocina">
-                <div class="card-icon">🍔</div>
-                <h2 class="card-title">Cocina</h2>
-                <p class="card-description">Alistamiento y envío de pedidos.</p>
-            </a>
-
-            <a href="users/cartera/" class="user-card" data-role="Cartera">
-                <div class="card-icon">🏦</div>
-                <h2 class="card-title">Cartera</h2>
-                <p class="card-description">Seguimiento de cuentas y contabilidad.</p>
-            </a>
-        </div>
-    </main>
-
-    <footer class="footer">
-        <p>&copy; 2025 TECSIN - Sistema de Gestión de Productos y Pedidos.</p>
-    </footer>
-
-    <script src="js/ini.js"></script>
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel Comida Rápida</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
