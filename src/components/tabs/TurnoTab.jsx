@@ -46,7 +46,7 @@ const TurnoTab = ({ api }) => {
     const items = [];
 
     // Añadir líneas de resumen como "items" para que aparezcan en la impresora térmica
-    items.push({ qty: '', name: 'Ventas Web', price: s.totalSales || 0 });
+    items.push({ qty: '', name: 'Domicilios Confirmados', price: s.totalSales || 0 });
     items.push({ qty: '', name: 'Mesas Cobradas', price: s.totalTables || 0 });
     items.push({ qty: '', name: 'Egresos', price: -(s.totalExpenses || 0) });
 
@@ -122,7 +122,7 @@ const TurnoTab = ({ api }) => {
       {showCloseModal && shift.summary && (
         <Modal title="Resumen antes de cerrar turno" onClose={() => setShowCloseModal(false)}>
           <div className="space-y-4 mb-6">
-            <div className="flex justify-between p-2"><span>Ventas Web</span><strong>{formatCurrency(shift.summary.totalSales)}</strong></div>
+            <div className="flex justify-between p-2"><span>Domicilios Confirmados</span><strong>{formatCurrency(shift.summary.totalSales)}</strong></div>
             <div className="flex justify-between p-2"><span>Mesas Cobradas</span><strong>{formatCurrency(shift.summary.totalTables)}</strong></div>
             <div className="flex justify-between p-2"><span>Egresos</span><strong className="text-red-500">-{formatCurrency(shift.summary.totalExpenses)}</strong></div>
             <div className="flex justify-between p-2 border-t font-bold text-xl text-emerald-600"><span>NETO</span><span>{formatCurrency(shift.summary.net)}</span></div>
