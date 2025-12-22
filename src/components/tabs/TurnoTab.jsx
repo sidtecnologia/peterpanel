@@ -99,7 +99,7 @@ const TurnoTab = ({ api }) => {
         <div className="flex justify-between items-center mb-4"><h3 className="text-lg font-bold">Resumen</h3><Button variant="ghost" onClick={async () => { setIsCalculating(true); try { await calculateSummary(); } catch (e) { console.error(e); } finally { setIsCalculating(false); } }}><RefreshCw size={16} /></Button></div>
         {shift.isOpen && shift.summary ? (
           <div className="space-y-3">
-            <div className="flex justify-between p-2 hover:bg-slate-50 rounded"><span className="text-slate-600">Ventas Web</span><span className="font-medium">{formatCurrency(shift.summary.totalSales)}</span></div>
+            <div className="flex justify-between p-2 hover:bg-slate-50 rounded"><span className="text-slate-600">Domicilios Confirmados</span><span className="font-medium">{formatCurrency(shift.summary.totalSales)}</span></div>
             <div className="flex justify-between p-2 hover:bg-slate-50 rounded"><span className="text-slate-600">Mesas Cobradas</span><span className="font-medium">{formatCurrency(shift.summary.totalTables)}</span></div>
             <div className="flex justify-between p-2 bg-red-50 text-red-700 rounded"><span>Egresos</span><span className="font-medium">-{formatCurrency(shift.summary.totalExpenses)}</span></div>
             <div className="flex justify-between pt-3 border-t font-bold text-xl text-emerald-600"><span>NETO</span><span>{formatCurrency(shift.summary.net)}</span></div>
