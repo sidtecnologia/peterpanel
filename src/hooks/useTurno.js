@@ -5,7 +5,6 @@ const SHIFT_STATE_KEY = 'shift_state';
 const useTurno = (api) => {
   const [shift, setShift] = useState({ isOpen: false, start: null, expenses: [], summary: null });
 
-  // Persistir estado completo en localStorage
   const persistShift = useCallback((newShift) => {
     try {
       const toSave = {
@@ -18,7 +17,6 @@ const useTurno = (api) => {
     }
   }, []);
 
-  // Cargar estado desde localStorage en cualquier momento (idempotente)
   const loadStatus = useCallback(() => {
     try {
       const raw = localStorage.getItem(SHIFT_STATE_KEY);
@@ -27,8 +25,8 @@ const useTurno = (api) => {
         setShift({
           isOpen: !!parsed.isOpen,
           start: parsed.start ? new Date(parsed.start) : null,
-          expenses: parsed.expenses || [],
-          summary: parsed.summary || null
+                 expenses: parsed.expenses || [],
+                 summary: parsed.summary || null
         });
         return;
       }
@@ -36,27 +34,20 @@ const useTurno = (api) => {
       console.error('Error reading shift state', e);
     }
 
-    // Fallback: compatibilidad con key antigua 'shift_start'
     const start = localStorage.getItem('shift_start');
     setShift(prev => ({ ...prev, isOpen: !!start, start: start ? new Date(start) : prev.start }));
   }, []);
 
-  // Abrir / Cerrar turno
-  // forceClose: si true no pide confirmación y cierra el turno (usado desde modal de confirmación)
   const toggle = useCallback((forceClose = false) => {
     setShift(prev => {
       if (prev.isOpen) {
         if (!forceClose && !confirm('¿Cerrar turno?')) return prev;
-        // Cerrar turno: marcar isOpen false pero mantener el historial/persistencia del turno en localStorage
         const closed = { ...prev, isOpen: false };
-        // Persistir el estado final (podría ser usado como histórico)
         persistShift(closed);
-        // NOTA: NO eliminamos SHIFT_STATE_KEY aquí para que la info del turno quede disponible tras logout/browser close.
         return { isOpen: false, start: null, expenses: [], summary: null };
       } else {
         const now = new Date();
         const opened = { ...prev, isOpen: true, start: now };
-        // Guardar también compatibilidad con key antigua
         try { localStorage.setItem('shift_start', now.toISOString()); } catch (e) {}
         persistShift(opened);
         return opened;
@@ -64,9 +55,7 @@ const useTurno = (api) => {
     });
   }, [persistShift]);
 
-  // Cargar egresos del turno (usa start desde la última versión persistida para evitar condiciones de carrera)
   const loadExpenses = useCallback(async () => {
-    // Leer start desde localStorage por si hubo cambios fuera de este closure
     try {
       const raw = JSON.parse(localStorage.getItem(SHIFT_STATE_KEY) || '{}');
       const startISO = raw.start || (shift.start ? shift.start.toISOString() : null);
@@ -87,15 +76,26 @@ const useTurno = (api) => {
     await loadExpenses();
   }, [api, loadExpenses]);
 
+  const removeExpense = useCallback(async (id) => {
+    if (!confirm('¿Eliminar este gasto?')) return;
+    try {
+      await api.request(`/out_money?id=eq.${id}`, { method: 'DELETE' });
+      await loadExpenses();
+    } catch (e) {
+      console.error('Error deleting expense', e);
+    }
+  }, [api, loadExpenses]);
+
   const calculateSummary = useCallback(async () => {
     try {
       const raw = JSON.parse(localStorage.getItem(SHIFT_STATE_KEY) || '{}');
       const startISO = raw.start || (shift.start ? shift.start.toISOString() : null);
       if (!startISO) return null;
 
+      // Traemos items de mesas también para el conteo de productos
       const [salesRes, tablesRes] = await Promise.all([
         api.request(`/orders_confirmed?select=total_amount,order_items,created_at&created_at=gte.${startISO}`),
-        api.request(`/table_sessions?select=total&status=eq.closed&closed_at=gte.${startISO}`)
+                                                      api.request(`/table_sessions?select=total,items,status&status=eq.closed&closed_at=gte.${startISO}`)
       ]);
 
       const salesArr = salesRes || [];
@@ -104,39 +104,48 @@ const useTurno = (api) => {
       const totalSales = salesArr.reduce((s, o) => s + (o.total_amount || 0), 0);
       const totalTables = tablesArr.reduce((s, t) => s + (t.total || 0), 0);
 
-      // Cargar gastos desde storage-persisted shift (para consistencia)
       let persisted = {};
       try { persisted = JSON.parse(localStorage.getItem(SHIFT_STATE_KEY) || '{}'); } catch (e) { persisted = {}; }
       const expensesArr = persisted.expenses || shift.expenses || [];
       const totalExpenses = (expensesArr || []).reduce((s, e) => s + (e.cant || 0), 0);
 
-      // Calcular top productos
+      // Calcular top productos unificando Domicilios y Mesas
       const counts = {};
-      (salesArr || []).forEach(o => {
+
+      const processItems = (itemList) => {
         let items = [];
-        if (!o.order_items) items = [];
-        else if (typeof o.order_items === 'string') {
-          try { items = JSON.parse(o.order_items); } catch (e) { items = []; }
-        } else items = o.order_items;
+        if (!itemList) return;
+        if (typeof itemList === 'string') {
+          try { items = JSON.parse(itemList); } catch (e) { items = []; }
+        } else {
+          items = itemList;
+        }
+
         (items || []).forEach(it => {
-          const key = it.name || String(it.product_id || 'unknown');
+          // Normalizar nombre o ID
+          const key = it.name || String(it.product_id || 'Var');
           const qty = Number(it.qty || it.quantity || 0);
           if (!counts[key]) counts[key] = 0;
           counts[key] += qty;
         });
-      });
+      };
+
+      // Procesar Domicilios
+      salesArr.forEach(o => processItems(o.order_items));
+      // Procesar Mesas
+      tablesArr.forEach(t => processItems(t.items));
 
       const topProducts = Object.entries(counts)
-        .map(([name, qty]) => ({ name, qty }))
-        .sort((a, b) => b.qty - a.qty)
-        .slice(0, 10);
+      .map(([name, qty]) => ({ name, qty }))
+      .sort((a, b) => b.qty - a.qty) // Orden descendente
+      .slice(0, 15);
 
       const summary = {
         totalSales,
         totalTables,
         totalExpenses,
         net: (totalSales + totalTables) - totalExpenses,
-        topProducts
+                                       topProducts
       };
 
       setShift(prev => {
@@ -152,7 +161,7 @@ const useTurno = (api) => {
     }
   }, [api, shift.expenses, shift.start, persistShift]);
 
-  return { shift, loadStatus, toggle, loadExpenses, addExpense, calculateSummary };
+  return { shift, loadStatus, toggle, loadExpenses, addExpense, removeExpense, calculateSummary };
 };
 
 export default useTurno;

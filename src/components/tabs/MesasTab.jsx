@@ -69,7 +69,7 @@ const MesasTab = ({ api }) => {
 
           <div className="flex justify-end gap-2">
             <Button variant="secondary" icon={Printer} onClick={() => handlePrint(selected)}>Imprimir</Button>
-            <Button variant="danger" onClick={async () => { if (await close(selected.id, selected.total)) setSelected(null); }}>Cerrar</Button>
+            <Button variant="danger" onClick={async () => { if (await close(selected.id, selected.total)) setSelected(null); }}>Cobrar</Button>
           </div>
         </Modal>
       )}
