@@ -135,7 +135,7 @@ Por favor confirmar recepción.`;
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <h3 className="text-lg font-bold">Pedidos Entrantes</h3>
+        <h3 className="text-lg font-bold">Domicilios Entrantes</h3>
         {orders.length === 0 ? <p className="text-slate-400 text-center py-10">No hay pedidos entrantes.</p> :
         orders.map(o => (
           <Card key={o.id} className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -161,13 +161,13 @@ Por favor confirmar recepción.`;
 
       <div className="pt-6 border-t">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold">Historial - Pedidos Cobrados</h3>
+          <h3 className="text-lg font-bold">Historial | Pedidos Confirmados</h3>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={refreshHistory} disabled={loadingHistory}>Actualizar</Button>
           </div>
         </div>
 
-        {history.length === 0 ? <p className="text-slate-400 text-center py-10">No hay pedidos cobrados.</p> :
+        {history.length === 0 ? <p className="text-slate-400 text-center py-10">No hay pedidos Confirmados.</p> :
         history.map(h => (
           <Card key={h.id} className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex-1">
