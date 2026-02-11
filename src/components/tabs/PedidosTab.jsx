@@ -9,7 +9,7 @@ import { formatCurrency, formatDate } from '../../lib/config';
 import { printThermalReceipt } from '../../lib/thermalPrint';
 
 // Tiempo que se oculta el botón domiciliario (ms)
-const DOMI_HIDE_MS = 10 * 60 * 1000;
+const DOMI_HIDE_MS = 10 * 60 * 20000;
 
 const PedidosTab = ({ api }) => {
   const { orders, load, updateStatus } = usePedidos(api, 'Pendiente');
@@ -70,7 +70,7 @@ const PedidosTab = ({ api }) => {
   const handlePrintOrder = (o) => {
     const items = parseItems(o).map(i => ({ qty: i.qty, name: i.name, price: i.price }));
     printThermalReceipt({
-      title: 'FACTURA - DONDE PETER',
+      title: 'FACTURA - COMIDA RÁPIDA',
       orderNumber: o.id,
       items,
       total: o.total_amount || 0,
@@ -86,9 +86,8 @@ const PedidosTab = ({ api }) => {
     const items = parseItems(o);
     const lines = items.map(i => `${i.qty}x ${i.name}`).join(', ');
     const total = formatCurrency(o.total_amount || 0);
-    const message = `Recojo pedido:
-ID: ${o.id}
-Cliente: ${o.customer_name || ''}
+    const message =
+`Cliente: ${o.customer_name || ''}
 Dirección: ${o.customer_address || ''}
 Teléfono: ${o.customer_phone || o.customer_tel || ''}
 Items: ${lines}
