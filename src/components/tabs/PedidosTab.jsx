@@ -82,14 +82,13 @@ const PedidosTab = ({ api }) => {
   };
 
   const handleDomiciliario = (o) => {
-    // Construir mensaje con información útil
     const items = parseItems(o);
     const lines = items.map(i => `${i.qty}x ${i.name}`).join(', ');
     const total = formatCurrency(o.total_amount || 0);
-    const message =
+    const message = 
 `Cliente: ${o.customer_name || ''}
 Dirección: ${o.customer_address || ''}
-Teléfono: ${o.customer_phone || o.customer_tel || ''}
+Teléfono: ${o.phone || ''}
 Items: ${lines}
 Total: ${total}
 Por favor confirmar recepción.`;
