@@ -1,7 +1,7 @@
 export const CONFIG = {
-  SB_URL: "https://ndqzyplsiqigsynweihk.supabase.co",
-  SB_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcXp5cGxzaXFpZ3N5bndlaWhrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODQyOTQ4MiwiZXhwIjoyMDc0MDA1NDgyfQ.LYocdE6jGG5B-0n_2Ke0nUpkrAKC7iBBRV7RmgjATD8",
-  STORAGE_BUCKET: "donde_peter",
+  SB_URL: "https://nqjdtwocsnruptnkaucd.supabase.co",
+  SB_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xamR0d29jc25ydXB0bmthdWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNDU4NDEsImV4cCI6MjA4ODgyMTg0MX0.7ykbCaogj7OhI1QJTwKs2V9fWQGOUv4SlBk0uFUidHc",
+  STORAGE_BUCKET: "images",
   DEFAULT_IMG: "https://placehold.co/40x40/f1f5f9/94a3b8?text=IMG"
 };
 
