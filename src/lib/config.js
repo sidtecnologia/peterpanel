@@ -1,7 +1,7 @@
 export const CONFIG = {
   SB_URL: "https://ndqzyplsiqigsynweihk.supabase.co",
   SB_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kcXp5cGxzaXFpZ3N5bndlaWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg0Mjk0ODIsImV4cCI6MjA3NDAwNTQ4Mn0.yIxNSDe6j-fiqyWKM8pElY0SpyyYkH3EKZFu6ozJ9TY",
-  STORAGE_BUCKET: "donde_peter",
+  STORAGE_BUCKET: "images",
   DEFAULT_IMG: "https://placehold.co/40x40/f1f5f9/94a3b8?text=IMG"
 };
 
