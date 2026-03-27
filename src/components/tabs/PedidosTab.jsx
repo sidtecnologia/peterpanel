@@ -8,52 +8,29 @@ import Modal from '../ui/Modal';
 import { formatCurrency, formatDate } from '../../lib/config';
 import { printThermalReceipt } from '../../lib/thermalPrint';
 
-// Tiempo que se oculta el botón domiciliario (ms)
-const DOMI_HIDE_MS = 10 * 60 * 20000;
-
 const PedidosTab = ({ api }) => {
   const { orders, load, updateStatus } = usePedidos(api, 'Pendiente');
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [selected, setSelected] = useState(null);
   const [selectedHist, setSelectedHist] = useState(null);
-  const [domiMap, setDomiMap] = useState({}); // orderId -> timestamp
 
   useEffect(() => { load(); }, [load]);
 
-  useEffect(() => {
-    // Cargar historial de pedidos cobrados (orders_confirmed)
-    const fetchHistory = async () => {
-      setLoadingHistory(true);
-      try {
-        // Se obtiene listado de pedidos confirmados/cobrados
-        const data = await api.request('/orders_confirmed?select=*&order=created_at.desc');
-        setHistory(data || []);
-      } catch (e) {
-        console.error('Error cargando historial', e);
-      } finally {
-        setLoadingHistory(false);
-      }
-    };
-    fetchHistory();
-
-    // Inicializar domiMap desde localStorage
-    const map = {};
-    (JSON.parse(localStorage.getItem('domi_sent_map') || '{}') || {});
-    // Also check individual keys fallback (in case saved separately)
-    Object.keys(localStorage).forEach((k) => {
-      if (k.startsWith('domic_sent_')) {
-        const id = k.replace('domic_sent_', '');
-        const ts = Number(localStorage.getItem(k) || 0);
-        if (ts) map[id] = ts;
-      }
-    });
-    // If there is a serialized map, merge it
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
     try {
-      const serialized = JSON.parse(localStorage.getItem('domi_sent_map') || '{}');
-      Object.assign(map, serialized);
-    } catch (e) { /* ignore */ }
-    setDomiMap(map);
+      const data = await api.request('/orders_confirmed?select=*&order=created_at.desc');
+      setHistory(data || []);
+    } catch (e) {
+      console.error('Error cargando historial', e);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
   }, [api]);
 
   const handleConfirm = (o) => updateStatus(o.id, { payment_status: 'Confirmado', order_status: 'Pendiente' });
@@ -70,54 +47,26 @@ const PedidosTab = ({ api }) => {
   const handlePrintOrder = (o) => {
     const items = parseItems(o).map(i => ({ qty: i.qty, name: i.name, price: i.price }));
     printThermalReceipt({
-      title: 'FACTURA - COMIDA RÁPIDA',
+      title: '--- CALLEJEROS ---',
       orderNumber: o.id,
       items,
       total: o.total_amount || 0,
       customerName: o.customer_name || '',
       customerAddress: o.customer_address || '',
       note: o.observation || '',
-      footer: 'Gracias por su compra'
+      footer: 'GRACIAS POR PREFERIRNOS'
     });
   };
 
-  const handleDomiciliario = (o) => {
-    const items = parseItems(o);
-    const lines = items.map(i => `${i.qty}x ${i.name}`).join(', ');
-    const total = formatCurrency(o.total_amount || 0);
-    const message = 
-`Cliente: ${o.customer_name || ''}
-Dirección: ${o.customer_address || ''}
-Teléfono: ${o.phone || ''}
-Items: ${lines}
-Total: ${total}
-Por favor confirmar recepción.`;
-
-    // Abrir WhatsApp Web con mensaje (no número fijo): usa wa.me/?text=
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-
-    // Guardar timestamp en localStorage y en estado para ocultar botón 10 minutos
-    const ts = Date.now();
-    const key = `domic_sent_${o.id}`;
+  const handleDespacho = async (o) => {
     try {
-      localStorage.setItem(key, String(ts));
-      // Also keep a serialized map to ease restore
-      const existingSerialized = JSON.parse(localStorage.getItem('domi_sent_map') || '{}');
-      existingSerialized[o.id] = ts;
-      localStorage.setItem('domi_sent_map', JSON.stringify(existingSerialized));
-    } catch (e) { /* ignore */ }
-
-    setDomiMap(prev => ({ ...prev, [o.id]: ts }));
+      await updateStatus(o.id, { order_status: 'Despachado' }, true);
+      await fetchHistory();
+    } catch (e) {
+      console.error('Error al actualizar estado a despachado', e);
+    }
   };
 
-  const isDomiHidden = (orderId) => {
-    const ts = domiMap[orderId] || Number(localStorage.getItem(`domic_sent_${orderId}`) || 0);
-    if (!ts) return false;
-    return (Date.now() - ts) < DOMI_HIDE_MS;
-  };
-
-  // Opcional: permitir refrescar historial
   const refreshHistory = async () => {
     setLoadingHistory(true);
     try {
@@ -183,13 +132,14 @@ Por favor confirmar recepción.`;
             <div className="flex gap-2">
               <Button variant="secondary" onClick={() => setSelectedHist(h)}>Detalle</Button>
               <Button variant="secondary" icon={Printer} onClick={() => handlePrintOrder(h)}>Imprimir</Button>
-              {!isDomiHidden(h.id) && <Button variant="primary" onClick={() => handleDomiciliario(h)}>Pedir domiciliario</Button>}
+              {h.order_status !== 'Despachado' && (
+                <Button variant="primary" onClick={() => handleDespacho(h)}>Pedido Listo</Button>
+              )}
             </div>
           </Card>
         ))}
       </div>
 
-      {/* Modal detalle pedido entrante (si lo deseas para orders) */}
       {selected && (
         <Modal title={`Pedido ${selected.id}`} onClose={() => setSelected(null)}>
           <div className="space-y-4 mb-6">
@@ -213,7 +163,6 @@ Por favor confirmar recepción.`;
         </Modal>
       )}
 
-      {/* Modal detalle pedido historial */}
       {selectedHist && (
         <Modal title={`Pedido ${selectedHist.id}`} onClose={() => setSelectedHist(null)}>
           <div className="space-y-4 mb-6">
@@ -233,7 +182,9 @@ Por favor confirmar recepción.`;
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setSelectedHist(null)}>Cerrar</Button>
             <Button variant="secondary" onClick={() => { handlePrintOrder(selectedHist); setSelectedHist(null); }}>Imprimir</Button>
-            {!isDomiHidden(selectedHist.id) && <Button variant="primary" onClick={() => { handleDomiciliario(selectedHist); setSelectedHist(null); }}>Pedir domiciliario</Button>}
+            {selectedHist.order_status !== 'Despachado' && (
+              <Button variant="primary" onClick={() => { handleDespacho(selectedHist); setSelectedHist(null); }}>Pedir domiciliario</Button>
+            )}
           </div>
         </Modal>
       )}
